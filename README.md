@@ -1,6 +1,6 @@
 # HYtodo Backend
 
-일정 관리 서비스의 백엔드 저장소입니다. Spring Boot 기반 REST API 서버로 시작하며, 데이터베이스는 MySQL 8.4와 Flyway Migration을 기본으로 사용합니다.
+하이엔드 미니프로젝트팀 HYtodo의 백엔드 저장소입니다. Spring Boot 기반 일정 관리 REST API 서버로 시작하며, 데이터베이스는 MySQL 8.4와 Flyway Migration을 기본으로 사용합니다.
 
 ## 기술 스택
 
@@ -28,6 +28,7 @@ src/main/java/com/hytodo/backend
     ├── response
     └── security
 ```
+
 ## 브랜치
 
 - `main`: 검증이 끝난 안정 버전
@@ -136,7 +137,3 @@ GET /api/health
   "status": "ok"
 }
 ```
-
-
-
-
