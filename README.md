@@ -71,7 +71,7 @@ IntelliJ의 Project SDK와 Gradle JVM도 JDK 21로 맞춥니다. IDE에서는 `b
 
 ### 처음 내려받기
 
-초기 세팅 PR이 `develop`에 병합된 뒤 다음 명령으로 내려받습니다.
+초기 세팅은 `main`과 `develop`에 반영되어 있습니다. 다음 명령으로 개발 기준 브랜치인 `develop`을 내려받습니다.
 
 ```bash
 git clone --branch develop https://github.com/HYtodo-team/calendar-backend.git
@@ -216,7 +216,7 @@ GET /api/health
 
 ## 기능 개발 시작
 
-초기 세팅 PR 병합 후 이슈를 배정하고 최신 `develop`에서 작업 브랜치를 만듭니다. 아래 이슈 번호와 기능명은 실제 배정받은 값으로 바꿉니다.
+이슈를 배정하고 최신 `develop`에서 작업 브랜치를 만듭니다. 아래 이슈 번호와 기능명은 실제 배정받은 값으로 바꿉니다.
 
 ```bash
 git switch develop
