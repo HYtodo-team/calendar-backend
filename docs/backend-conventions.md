@@ -71,8 +71,12 @@ src/main/java/com/hytodo/backend
 - 테이블명과 컬럼명을 명시적으로 작성합니다.
 - 날짜/시간은 용도에 맞게 `LocalDate`, `LocalTime`, `LocalDateTime`을 구분합니다.
 - 생성/수정 시간이 필요한 Entity는 `BaseTimeEntity`를 상속합니다.
+- DB 제약 조건과 Entity 필드 길이를 맞춥니다.
+- 도메인 핵심 필드는 생성자 또는 상태 변경 메서드에서 최소한의 유효성을 검증합니다.
 
 ## Entity Example
+
+아래는 핵심 구조 예시입니다. 검증 메서드까지 포함한 전체 구현은 [User.java](../src/main/java/com/hytodo/backend/domain/user/entity/User.java)를 참고합니다.
 
 ```java
 @Entity
@@ -81,27 +85,57 @@ src/main/java/com/hytodo/backend
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class User extends BaseTimeEntity {
 
+    private static final int MAX_EMAIL_LENGTH = 255;
+    private static final int MAX_PASSWORD_HASH_LENGTH = 255;
+    private static final int MAX_NICKNAME_LENGTH = 50;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
     private Long id;
 
-    @Column(nullable = false, unique = true, length = 255)
+    @Column(name = "email", nullable = false, unique = true, length = MAX_EMAIL_LENGTH)
     private String email;
 
-    @Column(name = "password_hash", nullable = false)
+    @Column(name = "password_hash", nullable = false, length = MAX_PASSWORD_HASH_LENGTH)
     private String passwordHash;
 
-    @Column(nullable = false, length = 50)
+    @Column(name = "nickname", nullable = false, length = MAX_NICKNAME_LENGTH)
     private String nickname;
 
     @Builder
     private User(String email, String passwordHash, String nickname) {
+        validateNotBlank(email, "email");
+        validateMaxLength(email, MAX_EMAIL_LENGTH, "email");
+        validateNotBlank(passwordHash, "passwordHash");
+        validateMaxLength(passwordHash, MAX_PASSWORD_HASH_LENGTH, "passwordHash");
+        validateNotBlank(nickname, "nickname");
+        validateMaxLength(nickname, MAX_NICKNAME_LENGTH, "nickname");
         this.email = email;
         this.passwordHash = passwordHash;
         this.nickname = nickname;
     }
+
+    public void changePasswordHash(String passwordHash) {
+        validateNotBlank(passwordHash, "passwordHash");
+        validateMaxLength(passwordHash, MAX_PASSWORD_HASH_LENGTH, "passwordHash");
+        this.passwordHash = passwordHash;
+    }
+
+    public void changeNickname(String nickname) {
+        validateNotBlank(nickname, "nickname");
+        validateMaxLength(nickname, MAX_NICKNAME_LENGTH, "nickname");
+        this.nickname = nickname;
+    }
 }
 ```
+
+## Repository Rules
+
+- Repository는 각 도메인의 `repository` 패키지에 둡니다.
+- 기본 CRUD는 `JpaRepository<Entity, Long>`를 사용합니다.
+- 이메일, 외부 식별자처럼 중복 확인이 필요한 필드는 `existsBy...` 메서드를 함께 둡니다.
+- 조회 실패 처리가 필요한 단건 조회는 `Optional<Entity>`를 반환합니다.
 
 ## Common Entity
 
