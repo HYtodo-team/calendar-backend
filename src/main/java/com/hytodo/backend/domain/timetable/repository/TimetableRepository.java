@@ -14,4 +14,6 @@ public interface TimetableRepository extends JpaRepository<Timetable, Long> {
 	Optional<Timetable> findByIdAndUserId(Long id, Long userId);
 
 	List<Timetable> findAllByUserIdAndActiveTrue(Long userId);
+
+	boolean existsByUserIdAndActiveTrue(Long userId);
 }
