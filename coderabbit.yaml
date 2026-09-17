@@ -57,6 +57,9 @@ reviews:
   auto_review:
     enabled: true
     auto_incremental_review: true   # 추가 커밋 시 변경된 부분만 자동 리뷰
+    base_branches:
+      - "main"
+      - "develop"
 
 # ---------------------------------------------------------------- #
 # 채팅 기능 설정
