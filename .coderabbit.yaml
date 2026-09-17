@@ -38,6 +38,7 @@ reviews:
       - "!**/*.class"
       - "!.idea/**"
       - "!*.iml"
+      - "!src/test/resources/**"
   path_instructions:
     - path: "src/main/java/com/hytodo/backend/global/exception/**"
       instructions: |
