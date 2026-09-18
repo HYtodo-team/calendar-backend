@@ -1,8 +1,8 @@
 spring:
   datasource:
-    url: ${DB_URL:jdbc:mysql://localhost:3306/hytodo}
-    username: ${DB_USERNAME:hytodo}
-    password: ${DB_PASSWORD:1234}
+    url: jdbc:mysql://localhost:3306/hytodo
+    username: root
+    password: 1234
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
