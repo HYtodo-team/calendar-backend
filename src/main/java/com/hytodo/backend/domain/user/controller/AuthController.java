@@ -1,6 +1,8 @@
 package com.hytodo.backend.domain.user.controller;
 
+import com.hytodo.backend.domain.user.dto.LoginRequest;
 import com.hytodo.backend.domain.user.dto.SignupRequest;
+import com.hytodo.backend.domain.user.dto.TokenResponse;
 import com.hytodo.backend.domain.user.dto.UserResponse;
 import com.hytodo.backend.domain.user.service.AuthService;
 import com.hytodo.backend.global.response.ApiResponse;
@@ -24,5 +26,11 @@ public class AuthController {
     public ResponseEntity<ApiResponse<UserResponse>> signup(@Valid @RequestBody SignupRequest request){
         UserResponse response = authService.signup(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response));
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<ApiResponse<TokenResponse>> login(@Valid @RequestBody LoginRequest request){
+        TokenResponse response = authService.login(request);
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 }

@@ -2,6 +2,8 @@ package com.hytodo.backend.domain.user.controller;
 
 import java.time.LocalDateTime;
 
+import com.hytodo.backend.domain.user.dto.LoginRequest;
+import com.hytodo.backend.domain.user.dto.TokenResponse;
 import com.hytodo.backend.domain.user.dto.SignupRequest;
 import com.hytodo.backend.domain.user.dto.UserResponse;
 import com.hytodo.backend.domain.user.service.AuthService;
@@ -103,5 +105,34 @@ class AuthControllerTest {
                         .content("{\"email\":\"dup@example.com\",\"password\":\"password1\",\"nickname\":\"tester\"}"))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.errorCode").value("EMAIL_ALREADY_EXISTS"));
+    }
+
+    @Test
+    @DisplayName("유효한 로그인 요청은 200과 TokenResponse를 반환한다")
+    void login_success() throws Exception {
+        given(authService.login(new LoginRequest("user@example.com", "password1")))
+                .willReturn(TokenResponse.of("access-token", 7200L));
+
+        mockMvc.perform(post("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"user@example.com\",\"password\":\"password1\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.accessToken").value("access-token"))
+                .andExpect(jsonPath("$.data.tokenType").value("Bearer"))
+                .andExpect(jsonPath("$.data.expiresIn").value(7200));
+    }
+
+    @Test
+    @DisplayName("로그인 실패는 401 INVALID_CREDENTIALS를 반환한다")
+    void login_failure_returns401() throws Exception {
+        given(authService.login(ArgumentMatchers.any()))
+                .willThrow(BusinessException.invalidCredentials());
+
+        mockMvc.perform(post("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"user@example.com\",\"password\":\"wrong\"}"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.errorCode").value("INVALID_CREDENTIALS"));
     }
 }
