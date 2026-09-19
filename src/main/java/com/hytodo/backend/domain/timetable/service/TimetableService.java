@@ -76,7 +76,8 @@ public class TimetableService {
 			timetable.changeSemester(request.semester());
 		}
 
-		return TimetableResponse.from(timetable);
+		// 응답의 updatedAt이 변경 이전 값으로 나가지 않도록 감사 시각을 먼저 반영한다.
+		return TimetableResponse.from(timetableRepository.saveAndFlush(timetable));
 	}
 
 	@Transactional
@@ -97,7 +98,7 @@ public class TimetableService {
 				.forEach(Timetable::deactivate);
 		timetable.activate();
 
-		return TimetableResponse.from(timetable);
+		return TimetableResponse.from(timetableRepository.saveAndFlush(timetable));
 	}
 
 	private User getUserForUpdate(Long userId) {

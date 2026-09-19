@@ -149,6 +149,7 @@ class TimetableServiceTest {
 		assertThat(updated.title()).isEqualTo("변경된 시간표");
 		assertThat(updated.semester()).isEqualTo("2026-1");
 		assertThat(updated.isActive()).isTrue();
+		assertThat(updated.updatedAt()).isAfter(updated.createdAt());
 	}
 
 	@Test

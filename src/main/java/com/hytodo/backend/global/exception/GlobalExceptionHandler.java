@@ -1,6 +1,7 @@
 package com.hytodo.backend.global.exception;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -34,7 +35,11 @@ public class GlobalExceptionHandler {
 				.body(ErrorResponse.of(ErrorCode.INVALID_REQUEST, message));
 	}
 
-	@ExceptionHandler({MissingRequestHeaderException.class, MethodArgumentTypeMismatchException.class})
+	@ExceptionHandler({
+			MissingRequestHeaderException.class,
+			MethodArgumentTypeMismatchException.class,
+			HttpMessageNotReadableException.class
+	})
 	public ResponseEntity<ErrorResponse> handleInvalidRequestValue() {
 		return ResponseEntity
 				.badRequest()
