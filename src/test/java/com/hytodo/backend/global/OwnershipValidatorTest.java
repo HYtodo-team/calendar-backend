@@ -3,6 +3,7 @@ package com.hytodo.backend.global;
 import com.hytodo.backend.global.exception.BusinessException;
 import com.hytodo.backend.global.exception.ErrorCode;
 import com.hytodo.backend.global.exception.OwnershipValidator;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.Optional;
@@ -36,4 +37,15 @@ public class OwnershipValidatorTest {
                 .isInstanceOf(BusinessException.class)
                 .satisfies(e -> assertThat(((BusinessException) e).getErrorCode()).isEqualTo(ErrorCode.RESOURCE_NOT_FOUND));
     }
-}
+
+    @Test
+    @DisplayName("소유자 ID가 null인 리소스는 NPE 없이 ResourceNotFoundException(404)을 던진다")
+    void nullOwnerId_throwsResourceNotFound_notNpe() {
+        FakeEvent eventWithNullOwner = new FakeEvent(1L, null);
+
+        assertThatThrownBy(() ->
+                OwnershipValidator.validate(Optional.of(eventWithNullOwner), FakeEvent::userId, 100L, "일정"))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode()).isEqualTo(ErrorCode.RESOURCE_NOT_FOUND));
+    }
+    }

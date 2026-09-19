@@ -113,6 +113,15 @@ class GlobalExceptionHandlerTest {
         }
     }
 
+    @Test
+    @DisplayName("필수 쿼리 파라미터 누락 시 VALIDATION_ERROR를 반환한다")
+    void missingRequiredParam_returnsValidationError() throws Exception {
+        mockMvc.perform(get("/test/events/{eventId}", 1L)) // currentUserId 빠뜨림
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errorCode").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.fieldErrors[0].field").value("currentUserId"));
+    }
+
     static class TestRequest {
         @NotBlank(message = "제목은 필수입니다.")
         private String title;
