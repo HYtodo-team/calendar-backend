@@ -48,4 +48,15 @@ public class OwnershipValidatorTest {
                 .isInstanceOf(BusinessException.class)
                 .satisfies(e -> assertThat(((BusinessException) e).getErrorCode()).isEqualTo(ErrorCode.RESOURCE_NOT_FOUND));
     }
+
+    @Test
+    @DisplayName("currentUserId가 null이면 소유자 ID가 null인 리소스도 통과시키지 않고 404를 던진다")
+    void nullCurrentUserId_throwsResourceNotFound_evenWhenOwnerIdAlsoNull() {
+        FakeEvent eventWithNullOwner = new FakeEvent(1L, null);
+
+        assertThatThrownBy(() ->
+                OwnershipValidator.validate(Optional.of(eventWithNullOwner), FakeEvent::userId, null, "일정"))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode()).isEqualTo(ErrorCode.RESOURCE_NOT_FOUND));
     }
+}
