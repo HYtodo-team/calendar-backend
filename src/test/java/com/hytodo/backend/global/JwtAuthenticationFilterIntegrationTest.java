@@ -1,4 +1,4 @@
-package com.hytodo.backend.global.security;
+package com.hytodo.backend.global;
 
 import java.net.URI;
 import java.net.http.HttpClient;
