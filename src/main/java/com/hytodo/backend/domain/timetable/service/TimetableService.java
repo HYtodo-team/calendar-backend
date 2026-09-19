@@ -86,17 +86,22 @@ public class TimetableService {
 	}
 
 	/**
-	 * 대상 시간표만 활성화하고 같은 사용자의 다른 시간표는 모두 비활성화합니다.
+	 * 활성화 요청이면 대상 시간표만 활성화하고 같은 사용자의 다른 시간표는 모두 비활성화합니다.
+	 * 비활성화 요청이면 대상만 비활성화하며, 다른 시간표를 대신 활성화하지 않습니다.
 	 * 동시 요청으로 활성 시간표가 여러 개가 되지 않도록 사용자 행을 선점한 뒤 처리합니다.
 	 */
 	@Transactional
-	public TimetableResponse activate(Long userId, Long timetableId) {
+	public TimetableResponse changeActivation(Long userId, Long timetableId, boolean active) {
 		getUserForUpdate(userId);
 
 		Timetable timetable = getOwnedTimetable(userId, timetableId);
-		timetableRepository.findAllByUserIdAndActiveTrue(userId)
-				.forEach(Timetable::deactivate);
-		timetable.activate();
+		if (active) {
+			timetableRepository.findAllByUserIdAndActiveTrue(userId)
+					.forEach(Timetable::deactivate);
+			timetable.activate();
+		} else {
+			timetable.deactivate();
+		}
 
 		return TimetableResponse.from(timetableRepository.saveAndFlush(timetable));
 	}

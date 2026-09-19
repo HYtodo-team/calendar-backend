@@ -1,6 +1,7 @@
 package com.hytodo.backend.domain.timetable.controller;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -139,7 +140,7 @@ class TimetableControllerTest {
 
 	@Test
 	void activateAcceptsTrue() throws Exception {
-		given(timetableService.activate(USER_ID, TIMETABLE_ID)).willReturn(timetableResponse(true));
+		given(timetableService.changeActivation(USER_ID, TIMETABLE_ID, true)).willReturn(timetableResponse(true));
 
 		mockMvc.perform(patch("/api/v1/timetables/{id}/activation", TIMETABLE_ID)
 						.header(USER_ID_HEADER, USER_ID)
@@ -150,15 +151,40 @@ class TimetableControllerTest {
 	}
 
 	@Test
-	void activateRejectsFalse() throws Exception {
+	void activateAcceptsFalse() throws Exception {
+		given(timetableService.changeActivation(USER_ID, TIMETABLE_ID, false)).willReturn(timetableResponse(false));
+
 		mockMvc.perform(patch("/api/v1/timetables/{id}/activation", TIMETABLE_ID)
 						.header(USER_ID_HEADER, USER_ID)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"isActive\":false}"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.data.isActive").value(false));
+	}
+
+	@Test
+	void activateRejectsMissingIsActive() throws Exception {
+		mockMvc.perform(patch("/api/v1/timetables/{id}/activation", TIMETABLE_ID)
+						.header(USER_ID_HEADER, USER_ID)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{}"))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
 
-		then(timetableService).should(never()).activate(anyLong(), anyLong());
+		then(timetableService).should(never()).changeActivation(anyLong(), anyLong(), anyBoolean());
+	}
+
+	@Test
+	void activateReturnsNotFoundForOtherUsersTimetable() throws Exception {
+		given(timetableService.changeActivation(USER_ID, TIMETABLE_ID, false))
+				.willThrow(new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "시간표를 찾을 수 없습니다."));
+
+		mockMvc.perform(patch("/api/v1/timetables/{id}/activation", TIMETABLE_ID)
+						.header(USER_ID_HEADER, USER_ID)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"isActive\":false}"))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.errorCode").value("RESOURCE_NOT_FOUND"));
 	}
 
 	@Test

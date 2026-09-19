@@ -166,7 +166,7 @@ class TimetableServiceTest {
 		Long firstId = timetableService.create(userId, new TimetableRequest("첫 번째", "2026-1")).id();
 		Long secondId = timetableService.create(userId, new TimetableRequest("두 번째", "2026-2")).id();
 
-		TimetableResponse activated = timetableService.activate(userId, secondId);
+		TimetableResponse activated = timetableService.changeActivation(userId, secondId, true);
 
 		assertThat(activated.isActive()).isTrue();
 		assertThat(timetableService.findOne(userId, firstId).isActive()).isFalse();
@@ -179,8 +179,55 @@ class TimetableServiceTest {
 	void activateAlreadyActiveTimetableKeepsItActive() {
 		Long timetableId = timetableService.create(userId, new TimetableRequest("시간표", "2026-1")).id();
 
-		assertThat(timetableService.activate(userId, timetableId).isActive()).isTrue();
+		assertThat(timetableService.changeActivation(userId, timetableId, true).isActive()).isTrue();
 		assertThat(timetableRepository.findAllByUserIdAndActiveTrue(userId)).hasSize(1);
+	}
+
+	@Test
+	void deactivateLeavesNoActiveTimetable() {
+		Long firstId = timetableService.create(userId, new TimetableRequest("첫 번째", "2026-1")).id();
+		timetableService.create(userId, new TimetableRequest("두 번째", "2026-2"));
+
+		TimetableResponse deactivated = timetableService.changeActivation(userId, firstId, false);
+
+		assertThat(deactivated.isActive()).isFalse();
+		assertThat(timetableRepository.findAllByUserIdAndActiveTrue(userId)).isEmpty();
+	}
+
+	@Test
+	void deactivateIsIdempotent() {
+		Long timetableId = timetableService.create(userId, new TimetableRequest("시간표", "2026-1")).id();
+
+		timetableService.changeActivation(userId, timetableId, false);
+		TimetableResponse deactivatedAgain = timetableService.changeActivation(userId, timetableId, false);
+
+		assertThat(deactivatedAgain.isActive()).isFalse();
+		assertThat(timetableRepository.findAllByUserIdAndActiveTrue(userId)).isEmpty();
+	}
+
+	@Test
+	void activateAnotherTimetableAfterDeactivation() {
+		Long firstId = timetableService.create(userId, new TimetableRequest("첫 번째", "2026-1")).id();
+		Long secondId = timetableService.create(userId, new TimetableRequest("두 번째", "2026-2")).id();
+		timetableService.changeActivation(userId, firstId, false);
+
+		TimetableResponse activated = timetableService.changeActivation(userId, secondId, true);
+
+		assertThat(activated.isActive()).isTrue();
+		assertThat(timetableRepository.findAllByUserIdAndActiveTrue(userId))
+				.extracting(timetable -> timetable.getId())
+				.containsExactly(secondId);
+	}
+
+	@Test
+	void deactivateFailsForOtherUsersTimetable() {
+		Long timetableId = timetableService.create(userId, new TimetableRequest("시간표", "2026-1")).id();
+
+		assertThatThrownBy(() -> timetableService.changeActivation(otherUserId, timetableId, false))
+				.isInstanceOf(BusinessException.class)
+				.extracting(exception -> ((BusinessException) exception).getErrorCode())
+				.isEqualTo(ErrorCode.RESOURCE_NOT_FOUND);
+		assertThat(timetableService.findOne(userId, timetableId).isActive()).isTrue();
 	}
 
 	@Test
@@ -232,7 +279,7 @@ class TimetableServiceTest {
 				executor.submit(() -> {
 					try {
 						start.await();
-						timetableService.activate(userId, targetId);
+						timetableService.changeActivation(userId, targetId, true);
 					} catch (Throwable throwable) {
 						failures.add(throwable);
 					} finally {

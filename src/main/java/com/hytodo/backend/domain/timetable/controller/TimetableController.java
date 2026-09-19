@@ -72,12 +72,13 @@ public class TimetableController {
 	}
 
 	@PatchMapping("/{timetableId}/activation")
-	public ResponseEntity<ApiResponse<TimetableResponse>> activate(
+	public ResponseEntity<ApiResponse<TimetableResponse>> changeActivation(
 			@RequestHeader(USER_ID_HEADER) Long userId,
 			@PathVariable Long timetableId,
 			@Valid @RequestBody TimetableActivationRequest request
 	) {
-		return ResponseEntity.ok(ApiResponse.success(timetableService.activate(userId, timetableId)));
+		return ResponseEntity.ok(ApiResponse.success(
+				timetableService.changeActivation(userId, timetableId, request.isActive())));
 	}
 
 	@DeleteMapping("/{timetableId}")
