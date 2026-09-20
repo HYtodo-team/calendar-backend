@@ -3,6 +3,7 @@ package com.hytodo.backend.domain.timetable.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.time.LocalTime;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -12,8 +13,11 @@ import java.util.concurrent.TimeUnit;
 
 import com.hytodo.backend.domain.timetable.dto.TimetableRequest;
 import com.hytodo.backend.domain.timetable.dto.TimetableDetailResponse;
+import com.hytodo.backend.domain.timetable.dto.TimetableEntryResponse;
 import com.hytodo.backend.domain.timetable.dto.TimetableResponse;
 import com.hytodo.backend.domain.timetable.dto.TimetableUpdateRequest;
+import com.hytodo.backend.domain.timetable.entity.TimetableEntry;
+import com.hytodo.backend.domain.timetable.repository.TimetableEntryRepository;
 import com.hytodo.backend.domain.timetable.repository.TimetableRepository;
 import com.hytodo.backend.domain.user.entity.User;
 import com.hytodo.backend.domain.user.repository.UserRepository;
@@ -50,6 +54,9 @@ class TimetableServiceTest {
 
 	@Autowired
 	private TimetableRepository timetableRepository;
+
+	@Autowired
+	private TimetableEntryRepository timetableEntryRepository;
 
 	@Autowired
 	private UserRepository userRepository;
@@ -127,6 +134,21 @@ class TimetableServiceTest {
 		assertThat(detail.title()).isEqualTo("시간표");
 		assertThat(detail.isActive()).isTrue();
 		assertThat(detail.entries()).isEmpty();
+	}
+
+	@Test
+	void findOneReturnsEntriesOrderedByDayAndStartTime() {
+		Long timetableId = timetableService.create(userId, new TimetableRequest("시간표", "2026-1")).id();
+		saveEntry(timetableId, "수요일 오후", 3, LocalTime.of(13, 0), LocalTime.of(14, 0));
+		saveEntry(timetableId, "월요일", 1, LocalTime.of(15, 0), LocalTime.of(16, 0));
+		saveEntry(timetableId, "수요일 오전", 3, LocalTime.of(9, 0), LocalTime.of(10, 0));
+
+		TimetableDetailResponse detail = timetableService.findOne(userId, timetableId);
+
+		assertThat(detail.entries())
+				.extracting(TimetableEntryResponse::title)
+				.containsExactly("월요일", "수요일 오전", "수요일 오후");
+		assertThat(detail.entries().get(0).startTime()).isEqualTo(LocalTime.of(15, 0));
 	}
 
 	@Test
@@ -295,6 +317,16 @@ class TimetableServiceTest {
 
 		assertThat(failures).isEmpty();
 		assertThat(timetableRepository.findAllByUserIdAndActiveTrue(userId)).hasSize(1);
+	}
+
+	private void saveEntry(Long timetableId, String title, int dayOfWeek, LocalTime startTime, LocalTime endTime) {
+		timetableEntryRepository.save(TimetableEntry.builder()
+				.timetable(timetableRepository.findById(timetableId).orElseThrow())
+				.title(title)
+				.dayOfWeek(dayOfWeek)
+				.startTime(startTime)
+				.endTime(endTime)
+				.build());
 	}
 
 	private User saveUser(String email) {

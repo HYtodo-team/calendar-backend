@@ -2,11 +2,13 @@ package com.hytodo.backend.domain.timetable.service;
 
 import java.util.List;
 
+import com.hytodo.backend.domain.timetable.dto.TimetableEntryResponse;
 import com.hytodo.backend.domain.timetable.dto.TimetableRequest;
 import com.hytodo.backend.domain.timetable.dto.TimetableDetailResponse;
 import com.hytodo.backend.domain.timetable.dto.TimetableResponse;
 import com.hytodo.backend.domain.timetable.dto.TimetableUpdateRequest;
 import com.hytodo.backend.domain.timetable.entity.Timetable;
+import com.hytodo.backend.domain.timetable.repository.TimetableEntryRepository;
 import com.hytodo.backend.domain.timetable.repository.TimetableRepository;
 import com.hytodo.backend.domain.user.entity.User;
 import com.hytodo.backend.domain.user.repository.UserRepository;
@@ -26,6 +28,7 @@ public class TimetableService {
 			Sort.by(Sort.Order.desc("active"), Sort.Order.desc("createdAt"));
 
 	private final TimetableRepository timetableRepository;
+	private final TimetableEntryRepository timetableEntryRepository;
 	private final UserRepository userRepository;
 
 	/**
@@ -58,8 +61,19 @@ public class TimetableService {
 				.toList();
 	}
 
+	/**
+	 * 시간표와 함께 요일·시작 시간 오름차순으로 정렬된 항목 목록을 반환합니다.
+	 */
 	public TimetableDetailResponse findOne(Long userId, Long timetableId) {
-		return TimetableDetailResponse.from(getOwnedTimetable(userId, timetableId));
+		Timetable timetable = getOwnedTimetable(userId, timetableId);
+
+		List<TimetableEntryResponse> entries =
+				timetableEntryRepository.findAllByTimetableIdOrderByDayOfWeekAscStartTimeAsc(timetableId)
+						.stream()
+						.map(TimetableEntryResponse::from)
+						.toList();
+
+		return TimetableDetailResponse.from(timetable, entries);
 	}
 
 	/**
