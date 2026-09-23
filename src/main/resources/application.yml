@@ -5,12 +5,14 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: create-drop
     properties:
       hibernate:
         format_sql: true
         jdbc:
           time_zone: UTC
+        hbm2ddl:
+          auto: create-drop
 
   flyway:
     enabled: false
