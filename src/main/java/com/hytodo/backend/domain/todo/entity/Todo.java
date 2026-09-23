@@ -25,7 +25,7 @@ public class Todo extends BaseTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id") // todo_id -> id 로 변경
+    @Column(name = "id")
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -37,11 +37,8 @@ public class Todo extends BaseTimeEntity {
     // @JoinColumn(name = "event_id")
     // private Event event;
 
-    @Column(name = "title", nullable = false, length = 255) // content를 title 컬럼과 매핑
+    @Column(name = "content", nullable = false, length = 255)
     private String content;
-
-    @Column(name = "description") // Flyway 스키마의 description 컬럼 추가
-    private String description;
 
     @Column(name = "is_completed", nullable = false)
     private boolean isCompleted;
