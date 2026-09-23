@@ -7,11 +7,16 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import com.hytodo.backend.domain.event.repository.EventRepository;
+import com.hytodo.backend.global.exception.BusinessException;
+import com.hytodo.backend.global.exception.ErrorCode;
 
 class EventServiceTest {
 
-    private final EventRepository eventRepository = Mockito.mock(EventRepository.class);
-    private final EventService eventService = new EventService(eventRepository);
+    private final EventRepository eventRepository =
+            Mockito.mock(EventRepository.class);
+
+    private final EventService eventService =
+            new EventService(eventRepository);
 
     @Test
     void fromAfterToIsRejected() {
@@ -19,8 +24,10 @@ class EventServiceTest {
         LocalDate to = LocalDate.of(2026, 9, 10);
 
         assertThatThrownBy(() -> eventService.getEvents(1L, from, to))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("INVALID_DATE_RANGE");
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("INVALID_DATE_RANGE")
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.INVALID_REQUEST);
     }
 
     @Test
@@ -29,7 +36,9 @@ class EventServiceTest {
         LocalDate to = from.plusDays(62);
 
         assertThatThrownBy(() -> eventService.getEvents(1L, from, to))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("INVALID_DATE_RANGE");
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("INVALID_DATE_RANGE")
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.INVALID_REQUEST);
     }
 }

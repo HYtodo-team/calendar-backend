@@ -9,6 +9,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.hytodo.backend.domain.event.dto.EventSummaryResponse;
 import com.hytodo.backend.domain.event.repository.EventRepository;
+import com.hytodo.backend.global.exception.BusinessException;
+import com.hytodo.backend.global.exception.ErrorCode;
 
 import lombok.RequiredArgsConstructor;
 
@@ -36,17 +38,26 @@ public class EventService {
 
     private void validateDateRange(LocalDate from, LocalDate to) {
         if (from == null || to == null) {
-            throw new IllegalArgumentException("from and to are required");
+            throw new BusinessException(
+                    ErrorCode.INVALID_REQUEST,
+                    "from and to are required"
+            );
         }
 
         if (from.isAfter(to)) {
-            throw new IllegalArgumentException("INVALID_DATE_RANGE");
+            throw new BusinessException(
+                    ErrorCode.INVALID_REQUEST,
+                    "INVALID_DATE_RANGE"
+            );
         }
 
         long rangeDays = ChronoUnit.DAYS.between(from, to) + 1;
 
         if (rangeDays > MAX_RANGE_DAYS) {
-            throw new IllegalArgumentException("INVALID_DATE_RANGE");
+            throw new BusinessException(
+                    ErrorCode.INVALID_REQUEST,
+                    "INVALID_DATE_RANGE"
+            );
         }
     }
 }
