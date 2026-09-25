@@ -2,6 +2,7 @@ package com.hytodo.backend.domain.event.service;
 
 import java.time.LocalDate;
 
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -40,5 +41,14 @@ class EventServiceTest {
                 .hasMessage("INVALID_DATE_RANGE")
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.INVALID_REQUEST);
+    }
+
+    @Test
+    void exactly62DaysIsAllowed() {
+        LocalDate from = LocalDate.of(2026, 9, 1);
+        LocalDate to = from.plusDays(61);
+
+        assertThatCode(() -> eventService.getEvents(1L, from, to))
+                .doesNotThrowAnyException();
     }
 }

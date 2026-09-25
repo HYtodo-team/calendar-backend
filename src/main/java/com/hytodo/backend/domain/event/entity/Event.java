@@ -75,6 +75,18 @@ public class Event extends BaseTimeEntity {
             String memo,
             boolean isImportant
     ) {
+        if (title == null || title.isBlank()) {
+            throw new IllegalArgumentException("title must not be blank");
+        }
+
+        if (startDate == null || endDate == null) {
+            throw new IllegalArgumentException("startDate and endDate are required");
+        }
+
+        if (startDate.isAfter(endDate)) {
+            throw new IllegalArgumentException("startDate must not be after endDate");
+        }
+
         this.user = user;
         this.title = title;
         this.startDate = startDate;
