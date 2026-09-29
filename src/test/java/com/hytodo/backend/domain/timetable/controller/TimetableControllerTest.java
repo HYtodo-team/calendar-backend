@@ -70,18 +70,19 @@ class TimetableControllerTest {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"title\":\"시간표\",\"semester\":\"\"}"))
 				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
+				.andExpect(jsonPath("$.errorCode").value("VALIDATION_ERROR"));
 
 		then(timetableService).should(never()).create(anyLong(), any());
 	}
 
+	// X-User-Id 누락은 공통 오류 형식 대신 Spring 기본 응답(400)으로 처리된다.
+	// JWT(#3) 적용 후에는 인증 실패(401 UNAUTHORIZED)로 바뀔 예정이라 상태 코드만 확인한다.
 	@Test
 	void createRequiresUserIdHeader() throws Exception {
 		mockMvc.perform(post("/api/v1/timetables")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"title\":\"시간표\",\"semester\":\"2026-1\"}"))
-				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
+				.andExpect(status().isBadRequest());
 	}
 
 	@Test
@@ -169,7 +170,7 @@ class TimetableControllerTest {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{}"))
 				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
+				.andExpect(jsonPath("$.errorCode").value("VALIDATION_ERROR"));
 
 		then(timetableService).should(never()).changeActivation(anyLong(), anyLong(), anyBoolean());
 	}
