@@ -84,9 +84,7 @@ public class Timetable extends BaseTimeEntity {
 	}
 
 	private static void validateSemester(String semester) {
-		if (semester == null) {
-			throw new IllegalArgumentException("semester must not be null");
-		}
+		validateNotBlank(semester, "semester");
 		validateMaxLength(semester, MAX_SEMESTER_LENGTH, "semester");
 	}
 
