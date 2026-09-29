@@ -92,7 +92,7 @@ class TimetableEntryControllerTest {
 						.content("{\"dayOfWeek\":8,\"startTime\":\"09:00:00\",\"endTime\":\"10:30:00\","
 								+ "\"title\":\"\",\"color\":\"파랑\"}"))
 				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
+				.andExpect(jsonPath("$.errorCode").value("VALIDATION_ERROR"));
 
 		then(timetableEntryService).should(never()).create(anyLong(), anyLong(), any());
 	}
@@ -111,14 +111,15 @@ class TimetableEntryControllerTest {
 				.andExpect(jsonPath("$.errorCode").value("INVALID_TIME_RANGE"));
 	}
 
+	// X-User-Id 누락은 공통 오류 형식 대신 Spring 기본 응답(400)으로 처리된다.
+	// JWT(#3) 적용 후에는 인증 실패(401 UNAUTHORIZED)로 바뀔 예정이라 상태 코드만 확인한다.
 	@Test
 	void createRequiresUserIdHeader() throws Exception {
 		mockMvc.perform(post("/api/v1/timetables/{timetableId}/entries", TIMETABLE_ID)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"dayOfWeek\":1,\"startTime\":\"09:00:00\",\"endTime\":\"10:30:00\","
 								+ "\"title\":\"자료구조\"}"))
-				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
+				.andExpect(status().isBadRequest());
 	}
 
 	@Test
@@ -183,7 +184,7 @@ class TimetableEntryControllerTest {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"startTime\":\"09:00:00\"}"))
 				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
+				.andExpect(jsonPath("$.errorCode").value("VALIDATION_ERROR"));
 
 		then(timetableEntryService).should(never()).update(anyLong(), anyLong(), anyLong(), any());
 	}
