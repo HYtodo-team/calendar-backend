@@ -19,6 +19,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.dao.DataIntegrityViolationException;
+import static org.mockito.ArgumentMatchers.anyString;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -60,7 +62,7 @@ class AuthServiceTest {
                 .nickname("tester")
                 .build();
         ReflectionTestUtils.setField(saved, "id", 1L);
-        given(userRepository.save(any(User.class))).willReturn(saved);
+        given(userRepository.saveAndFlush(any(User.class))).willReturn(saved);
 
         UserResponse response = authService.signup(request);
 
@@ -79,7 +81,20 @@ class AuthServiceTest {
                 .isInstanceOf(BusinessException.class)
                 .satisfies(e -> assertThat(((BusinessException) e).getErrorCode()).isEqualTo(ErrorCode.EMAIL_ALREADY_EXISTS));
 
-        verify(userRepository, never()).save(any());
+        verify(userRepository, never()).saveAndFlush(any());
+    }
+
+    @Test
+    @DisplayName("existsByEmail 통과 후 동시 요청으로 인해 저장 시점에 unique 제약이 걸리면 EMAIL_ALREADY_EXISTS(409)를 던진다")
+    void signup_concurrentDuplicateInsert_throwsEmailAlreadyExists() {
+        SignupRequest request = new SignupRequest("race@example.com", "password1", "tester");
+        given(userRepository.existsByEmail("race@example.com")).willReturn(false);
+        given(passwordEncoder.encode("password1")).willReturn("encoded-password");
+        given(userRepository.saveAndFlush(any(User.class))).willThrow(new DataIntegrityViolationException("duplicate"));
+
+        assertThatThrownBy(() -> authService.signup(request))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode()).isEqualTo(ErrorCode.EMAIL_ALREADY_EXISTS));
     }
 
     @Test
@@ -110,6 +125,7 @@ class AuthServiceTest {
     void login_emailNotFound_throwsInvalidCredentials() {
         LoginRequest request = new LoginRequest("missing@example.com", "password1");
         given(userRepository.findByEmail("missing@example.com")).willReturn(Optional.empty());
+        given(passwordEncoder.matches(anyString(), anyString())).willReturn(false);
 
         assertThatThrownBy(() -> authService.login(request))
                 .isInstanceOf(BusinessException.class)
@@ -137,5 +153,17 @@ class AuthServiceTest {
                 .satisfies(e -> assertThat(((BusinessException) e).getErrorCode()).isEqualTo(ErrorCode.INVALID_CREDENTIALS));
 
         verify(jwtTokenProvider, never()).generateAccessToken(anyLong());
+    }
+
+    @Test
+    @DisplayName("가입되지 않은 이메일이어도 계정 존재 여부를 노출하지 않기 위해 비밀번호 매칭 연산을 동일하게 수행한다")
+    void login_emailNotFound_stillRunsPasswordMatching() {
+        LoginRequest request = new LoginRequest("missing@example.com", "password1");
+        given(userRepository.findByEmail("missing@example.com")).willReturn(Optional.empty());
+        given(passwordEncoder.matches(anyString(), anyString())).willReturn(false);
+
+        assertThatThrownBy(() -> authService.login(request)).isInstanceOf(BusinessException.class);
+
+        verify(passwordEncoder).matches("password1", "$2a$10$ESF6HAqVyfps0BMbGQU2nuJzs0vMsvirsfTB8A6hMbRnit1mfdmUa");
     }
 }

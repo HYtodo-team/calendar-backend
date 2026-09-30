@@ -28,8 +28,9 @@ public class JwtTokenProvider {
                 .subject(String.valueOf(userId))
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(now.plusSeconds(accessTokenExpirationSeconds)))
-                .signWith(key)
+                .signWith(key, Jwts.SIG.HS256)
                 .compact();
+
     }
 
     public long getAccessTokenExpirationSeconds() {

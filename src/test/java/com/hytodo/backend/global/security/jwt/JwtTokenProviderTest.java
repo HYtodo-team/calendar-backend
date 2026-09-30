@@ -76,4 +76,15 @@ class JwtTokenProviderTest {
 
         assertThat(jwtTokenProvider.validateToken(tokenSignedWithOtherKey)).isFalse();
     }
+
+    @Test
+    @DisplayName("키 길이와 무관하게 서명 알고리즘은 HS256으로 고정된다")
+    void generateAccessToken_alwaysSignsWithHs256() {
+        String token = jwtTokenProvider.generateAccessToken(1L);
+
+        String headerJson = new String(
+                java.util.Base64.getUrlDecoder().decode(token.split("\\.")[0]), StandardCharsets.UTF_8);
+
+        assertThat(headerJson).contains("\"alg\":\"HS256\"");
+    }
 }
