@@ -24,16 +24,20 @@ import com.hytodo.backend.domain.timetable.service.TimetableService;
 import com.hytodo.backend.global.exception.BusinessException;
 import com.hytodo.backend.global.exception.ErrorCode;
 import com.hytodo.backend.global.exception.GlobalExceptionHandler;
+import com.hytodo.backend.global.security.CustomUserDetails;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.method.annotation.AuthenticationPrincipalArgumentResolver;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 class TimetableControllerTest {
 
-	private static final String USER_ID_HEADER = "X-User-Id";
 	private static final Long USER_ID = 1L;
 	private static final Long TIMETABLE_ID = 10L;
 
@@ -45,8 +49,19 @@ class TimetableControllerTest {
 	void setUp() {
 		timetableService = Mockito.mock(TimetableService.class);
 		mockMvc = MockMvcBuilders.standaloneSetup(new TimetableController(timetableService))
+				.setCustomArgumentResolvers(new AuthenticationPrincipalArgumentResolver())
 				.setControllerAdvice(new GlobalExceptionHandler())
 				.build();
+
+		// 보안 필터가 없는 standalone 환경이므로, JWT 필터가 하는 일(인증 정보 저장)을 직접 흉내 낸다.
+		CustomUserDetails userDetails = new CustomUserDetails(USER_ID);
+		SecurityContextHolder.getContext().setAuthentication(
+				new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities()));
+	}
+
+	@AfterEach
+	void tearDown() {
+		SecurityContextHolder.clearContext();
 	}
 
 	@Test
@@ -54,7 +69,6 @@ class TimetableControllerTest {
 		given(timetableService.create(eq(USER_ID), any())).willReturn(timetableResponse(true));
 
 		mockMvc.perform(post("/api/v1/timetables")
-						.header(USER_ID_HEADER, USER_ID)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"title\":\"1학기 시간표\",\"semester\":\"2026-1\"}"))
 				.andExpect(status().isCreated())
@@ -66,7 +80,6 @@ class TimetableControllerTest {
 	@Test
 	void createRejectsBlankSemester() throws Exception {
 		mockMvc.perform(post("/api/v1/timetables")
-						.header(USER_ID_HEADER, USER_ID)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"title\":\"시간표\",\"semester\":\"\"}"))
 				.andExpect(status().isBadRequest())
@@ -75,21 +88,11 @@ class TimetableControllerTest {
 		then(timetableService).should(never()).create(anyLong(), any());
 	}
 
-	// X-User-Id 누락은 공통 오류 형식 대신 Spring 기본 응답(400)으로 처리된다.
-	// JWT(#3) 적용 후에는 인증 실패(401 UNAUTHORIZED)로 바뀔 예정이라 상태 코드만 확인한다.
-	@Test
-	void createRequiresUserIdHeader() throws Exception {
-		mockMvc.perform(post("/api/v1/timetables")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"title\":\"시간표\",\"semester\":\"2026-1\"}"))
-				.andExpect(status().isBadRequest());
-	}
-
 	@Test
 	void findAllReturnsList() throws Exception {
 		given(timetableService.findAll(USER_ID)).willReturn(List.of(timetableResponse(true)));
 
-		mockMvc.perform(get("/api/v1/timetables").header(USER_ID_HEADER, USER_ID))
+		mockMvc.perform(get("/api/v1/timetables"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.data[0].isActive").value(true));
 	}
@@ -99,7 +102,7 @@ class TimetableControllerTest {
 		given(timetableService.findOne(USER_ID, TIMETABLE_ID)).willReturn(new TimetableDetailResponse(
 				TIMETABLE_ID, "1학기 시간표", "2026-1", true, LocalDateTime.now(), LocalDateTime.now(), List.of()));
 
-		mockMvc.perform(get("/api/v1/timetables/{id}", TIMETABLE_ID).header(USER_ID_HEADER, USER_ID))
+		mockMvc.perform(get("/api/v1/timetables/{id}", TIMETABLE_ID))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.data.entries").isArray())
 				.andExpect(jsonPath("$.data.entries").isEmpty());
@@ -110,7 +113,7 @@ class TimetableControllerTest {
 		given(timetableService.findOne(USER_ID, TIMETABLE_ID))
 				.willThrow(new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "시간표를 찾을 수 없습니다."));
 
-		mockMvc.perform(get("/api/v1/timetables/{id}", TIMETABLE_ID).header(USER_ID_HEADER, USER_ID))
+		mockMvc.perform(get("/api/v1/timetables/{id}", TIMETABLE_ID))
 				.andExpect(status().isNotFound())
 				.andExpect(jsonPath("$.errorCode").value("RESOURCE_NOT_FOUND"));
 	}
@@ -121,7 +124,6 @@ class TimetableControllerTest {
 				.willReturn(timetableResponse(true));
 
 		mockMvc.perform(patch("/api/v1/timetables/{id}", TIMETABLE_ID)
-						.header(USER_ID_HEADER, USER_ID)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"title\":\"변경된 시간표\"}"))
 				.andExpect(status().isOk())
@@ -131,7 +133,6 @@ class TimetableControllerTest {
 	@Test
 	void updateRejectsEmptyBody() throws Exception {
 		mockMvc.perform(patch("/api/v1/timetables/{id}", TIMETABLE_ID)
-						.header(USER_ID_HEADER, USER_ID)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{}"))
 				.andExpect(status().isBadRequest());
@@ -144,7 +145,6 @@ class TimetableControllerTest {
 		given(timetableService.changeActivation(USER_ID, TIMETABLE_ID, true)).willReturn(timetableResponse(true));
 
 		mockMvc.perform(patch("/api/v1/timetables/{id}/activation", TIMETABLE_ID)
-						.header(USER_ID_HEADER, USER_ID)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"isActive\":true}"))
 				.andExpect(status().isOk())
@@ -156,7 +156,6 @@ class TimetableControllerTest {
 		given(timetableService.changeActivation(USER_ID, TIMETABLE_ID, false)).willReturn(timetableResponse(false));
 
 		mockMvc.perform(patch("/api/v1/timetables/{id}/activation", TIMETABLE_ID)
-						.header(USER_ID_HEADER, USER_ID)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"isActive\":false}"))
 				.andExpect(status().isOk())
@@ -166,7 +165,6 @@ class TimetableControllerTest {
 	@Test
 	void activateRejectsMissingIsActive() throws Exception {
 		mockMvc.perform(patch("/api/v1/timetables/{id}/activation", TIMETABLE_ID)
-						.header(USER_ID_HEADER, USER_ID)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{}"))
 				.andExpect(status().isBadRequest())
@@ -181,7 +179,6 @@ class TimetableControllerTest {
 				.willThrow(new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "시간표를 찾을 수 없습니다."));
 
 		mockMvc.perform(patch("/api/v1/timetables/{id}/activation", TIMETABLE_ID)
-						.header(USER_ID_HEADER, USER_ID)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"isActive\":false}"))
 				.andExpect(status().isNotFound())
@@ -190,7 +187,7 @@ class TimetableControllerTest {
 
 	@Test
 	void deleteReturnsNoContent() throws Exception {
-		mockMvc.perform(delete("/api/v1/timetables/{id}", TIMETABLE_ID).header(USER_ID_HEADER, USER_ID))
+		mockMvc.perform(delete("/api/v1/timetables/{id}", TIMETABLE_ID))
 				.andExpect(status().isNoContent());
 
 		then(timetableService).should().delete(USER_ID, TIMETABLE_ID);
