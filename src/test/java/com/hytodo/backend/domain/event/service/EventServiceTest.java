@@ -26,9 +26,9 @@ class EventServiceTest {
 
         assertThatThrownBy(() -> eventService.getEvents(1L, from, to))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("INVALID_DATE_RANGE")
+                .hasMessage(ErrorCode.INVALID_DATE_RANGE.getMessage())
                 .extracting("errorCode")
-                .isEqualTo(ErrorCode.INVALID_REQUEST);
+                .isEqualTo(ErrorCode.INVALID_DATE_RANGE);
     }
 
     @Test
@@ -38,9 +38,9 @@ class EventServiceTest {
 
         assertThatThrownBy(() -> eventService.getEvents(1L, from, to))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("INVALID_DATE_RANGE")
+                .hasMessage(ErrorCode.INVALID_DATE_RANGE.getMessage())
                 .extracting("errorCode")
-                .isEqualTo(ErrorCode.INVALID_REQUEST);
+                .isEqualTo(ErrorCode.INVALID_DATE_RANGE);
     }
 
     @Test

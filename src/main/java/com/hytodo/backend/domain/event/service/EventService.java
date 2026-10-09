@@ -39,25 +39,19 @@ public class EventService {
     private void validateDateRange(LocalDate from, LocalDate to) {
         if (from == null || to == null) {
             throw new BusinessException(
-                    ErrorCode.INVALID_REQUEST,
+                    ErrorCode.VALIDATION_ERROR,
                     "from and to are required"
             );
         }
 
         if (from.isAfter(to)) {
-            throw new BusinessException(
-                    ErrorCode.INVALID_REQUEST,
-                    "INVALID_DATE_RANGE"
-            );
+            throw new BusinessException(ErrorCode.INVALID_DATE_RANGE);
         }
 
         long rangeDays = ChronoUnit.DAYS.between(from, to) + 1;
 
         if (rangeDays > MAX_RANGE_DAYS) {
-            throw new BusinessException(
-                    ErrorCode.INVALID_REQUEST,
-                    "INVALID_DATE_RANGE"
-            );
+            throw new BusinessException(ErrorCode.INVALID_DATE_RANGE);
         }
     }
 }
