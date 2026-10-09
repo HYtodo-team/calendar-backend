@@ -8,7 +8,7 @@ import com.hytodo.backend.domain.timetable.entity.Timetable;
 
 /**
  * 목록 응답에 {@code entries}가 추가된 상세 응답입니다.
- * {@code entries}는 시간표 항목(BE-09) 구현 전까지 항상 빈 배열로 내려갑니다.
+ * {@code entries}는 요일과 시작 시간 오름차순으로 정렬된 시간표 항목입니다.
  */
 public record TimetableDetailResponse(
 		Long id,
@@ -18,10 +18,10 @@ public record TimetableDetailResponse(
 		boolean isActive,
 		LocalDateTime createdAt,
 		LocalDateTime updatedAt,
-		List<Object> entries
+		List<TimetableEntryResponse> entries
 ) {
 
-	public static TimetableDetailResponse from(Timetable timetable) {
+	public static TimetableDetailResponse from(Timetable timetable, List<TimetableEntryResponse> entries) {
 		return new TimetableDetailResponse(
 				timetable.getId(),
 				timetable.getTitle(),
@@ -29,7 +29,7 @@ public record TimetableDetailResponse(
 				timetable.isActive(),
 				timetable.getCreatedAt(),
 				timetable.getUpdatedAt(),
-				List.of()
+				entries
 		);
 	}
 }
