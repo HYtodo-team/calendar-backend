@@ -54,8 +54,8 @@ class HytodoBackendApplicationTests {
 				.contains("users", "events", "todos", "daily_notes", "timetables",
 						"timetable_entries", "flyway_schema_history");
 		assertThat(jdbcTemplate.queryForObject(
-				"SELECT COUNT(*) FROM flyway_schema_history WHERE version = '1' AND success = 1",
-				Integer.class)).isEqualTo(1);
+				"SELECT COUNT(*) FROM flyway_schema_history WHERE version IN ('1', '2') AND success = 1",
+				Integer.class)).isEqualTo(2);
 	}
 
 	@Test
