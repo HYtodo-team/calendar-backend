@@ -21,6 +21,7 @@ import com.hytodo.backend.domain.todo.dto.TodoResponse;
 import com.hytodo.backend.domain.todo.dto.TodoUpdateRequest;
 import com.hytodo.backend.domain.todo.service.TodoService;
 import com.hytodo.backend.global.response.ApiResponse;
+import com.hytodo.backend.global.security.CustomUserDetails;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -32,76 +33,76 @@ public class TodoController {
 
     private final TodoService todoService;
 
-    // API-TODO-001: 투두 생성
+    // API-TODO-001: Todo 생성
     @PostMapping("/todos")
     public ResponseEntity<ApiResponse<TodoResponse>> createTodo(
-            @AuthenticationPrincipal Long userId,
+            @AuthenticationPrincipal CustomUserDetails userDetails,
             @Valid @RequestBody TodoCreateRequest request
     ) {
-        TodoResponse response = todoService.createTodo(userId, request);
+        TodoResponse response = todoService.createTodo(userDetails.getUserId(), request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success(response));
     }
 
-    // API-TODO-002: 전체 투두 목록 조회
+    // API-TODO-002: 전체 Todo 목록 조회
     @GetMapping("/todos")
     public ResponseEntity<ApiResponse<List<TodoResponse>>> getTodos(
-            @AuthenticationPrincipal Long userId,
+            @AuthenticationPrincipal CustomUserDetails userDetails,
             @RequestParam(name = "completed", required = false) Boolean completed
     ) {
-        List<TodoResponse> response = todoService.getTodos(userId, completed);
+        List<TodoResponse> response = todoService.getTodos(userDetails.getUserId(), completed);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
-    // API-TODO-003: 투두 상세 조회
+    // API-TODO-003: Todo 상세 조회
     @GetMapping("/todos/{todoId}")
     public ResponseEntity<ApiResponse<TodoResponse>> getTodo(
-            @AuthenticationPrincipal Long userId,
+            @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable(name = "todoId") Long todoId
     ) {
-        TodoResponse response = todoService.getTodo(userId, todoId);
+        TodoResponse response = todoService.getTodo(userDetails.getUserId(), todoId);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
-    // API-TODO-004: 특정 일정별 투두 목록 조회
+    // API-TODO-004: 특정 일정에 연결된 Todo 목록 조회
     @GetMapping("/calendar-events/{eventId}/todos")
     public ResponseEntity<ApiResponse<List<TodoResponse>>> getTodosByEvent(
-            @AuthenticationPrincipal Long userId,
+            @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable(name = "eventId") Long eventId
     ) {
-        List<TodoResponse> response = todoService.getTodosByEvent(userId, eventId);
+        List<TodoResponse> response = todoService.getTodosByEvent(userDetails.getUserId(), eventId);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
-    // API-TODO-005: 투두 내용 수정
+    // API-TODO-005: Todo 내용 수정
     @PatchMapping("/todos/{todoId}")
     public ResponseEntity<ApiResponse<TodoResponse>> updateTodo(
-            @AuthenticationPrincipal Long userId,
+            @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable(name = "todoId") Long todoId,
             @Valid @RequestBody TodoUpdateRequest request
     ) {
-        TodoResponse response = todoService.updateTodo(userId, todoId, request);
+        TodoResponse response = todoService.updateTodo(userDetails.getUserId(), todoId, request);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
-    // API-TODO-006: 투두 완료 상태 변경
+    // API-TODO-006: Todo 완료 상태 변경
     @PatchMapping("/todos/{todoId}/completion")
     public ResponseEntity<ApiResponse<TodoResponse>> updateCompletion(
-            @AuthenticationPrincipal Long userId,
+            @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable(name = "todoId") Long todoId,
             @Valid @RequestBody TodoCompletionRequest request
     ) {
-        TodoResponse response = todoService.updateCompletion(userId, todoId, request);
+        TodoResponse response = todoService.updateCompletion(userDetails.getUserId(), todoId, request);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
-    // API-TODO-007: 투두 삭제
+    // API-TODO-007: Todo 삭제
     @DeleteMapping("/todos/{todoId}")
     public ResponseEntity<Void> deleteTodo(
-            @AuthenticationPrincipal Long userId,
+            @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable(name = "todoId") Long todoId
     ) {
-        todoService.deleteTodo(userId, todoId);
+        todoService.deleteTodo(userDetails.getUserId(), todoId);
         return ResponseEntity.noContent().build();
     }
 }
