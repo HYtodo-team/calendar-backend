@@ -1,5 +1,24 @@
 package com.hytodo.backend.domain.todo.service;
 
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
+
 import com.hytodo.backend.domain.todo.dto.TodoCompletionRequest;
 import com.hytodo.backend.domain.todo.dto.TodoCreateRequest;
 import com.hytodo.backend.domain.todo.dto.TodoResponse;
@@ -10,25 +29,6 @@ import com.hytodo.backend.domain.user.entity.User;
 import com.hytodo.backend.domain.user.repository.UserRepository;
 import com.hytodo.backend.global.exception.BusinessException;
 import com.hytodo.backend.global.exception.ErrorCode;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.mockito.quality.Strictness;
-
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -176,7 +176,8 @@ class TodoServiceTest {
         given(mockTodo.getCreatedAt()).willReturn(LocalDateTime.now());
         given(mockTodo.getUpdatedAt()).willReturn(LocalDateTime.now());
 
-        given(todoRepository.findByIdAndUserId(todoId, userId)).willReturn(Optional.of(mockTodo));
+        given(todoRepository.findByIdAndUserId(todoId, userId))
+                .willReturn(Optional.of(mockTodo));
 
         // when
         TodoResponse response = todoService.updateCompletion(userId, todoId, request);
@@ -195,7 +196,8 @@ class TodoServiceTest {
         Long todoId = 100L;
 
         Todo mockTodo = mock(Todo.class);
-        given(todoRepository.findByIdAndUserId(todoId, userId)).willReturn(Optional.of(mockTodo));
+        given(todoRepository.findByIdAndUserId(todoId, userId))
+                .willReturn(Optional.of(mockTodo));
 
         // when
         todoService.deleteTodo(userId, todoId);
@@ -219,7 +221,8 @@ class TodoServiceTest {
         given(mockTodo.getCreatedAt()).willReturn(LocalDateTime.now());
         given(mockTodo.getUpdatedAt()).willReturn(LocalDateTime.now());
 
-        given(todoRepository.findByIdAndUserId(todoId, userId)).willReturn(Optional.of(mockTodo));
+        given(todoRepository.findByIdAndUserId(todoId, userId))
+                .willReturn(Optional.of(mockTodo));
 
         // when
         TodoResponse response = todoService.updateTodo(userId, todoId, request);
@@ -258,5 +261,22 @@ class TodoServiceTest {
         assertThat(responses).hasSize(2);
         assertThat(responses.get(0).id()).isEqualTo(1L);
         assertThat(responses.get(1).id()).isEqualTo(2L);
+    }
+
+    @Test
+    @DisplayName("존재하지 않거나 본인 소유가 아닌 투두 조회 시 예외 발생")
+    void getTodo_notFound_throwsException() {
+        // given
+        Long userId = 1L;
+        Long todoId = 999L;
+
+        given(todoRepository.findByIdAndUserId(todoId, userId))
+                .willReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> todoService.getTodo(userId, todoId))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.TODO_NOT_FOUND);
     }
 }
