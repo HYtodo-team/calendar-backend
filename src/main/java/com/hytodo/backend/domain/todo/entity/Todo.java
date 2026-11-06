@@ -1,7 +1,11 @@
+
 package com.hytodo.backend.domain.todo.entity;
 
+import com.hytodo.backend.domain.event.entity.Event;
 import com.hytodo.backend.domain.user.entity.User;
 import com.hytodo.backend.global.entity.BaseTimeEntity;
+import com.hytodo.backend.global.exception.BusinessException;
+import com.hytodo.backend.global.exception.ErrorCode;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -28,14 +32,15 @@ public class Todo extends BaseTimeEntity {
     @Column(name = "id")
     private Long id;
 
+    // Todo 소유자
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    // TODO: Event 엔티티 구현 후 주석 해제 예정
-    // @ManyToOne(fetch = FetchType.LAZY)
-    // @JoinColumn(name = "event_id")
-    // private Event event;
+    // Todo에 연결된 일정 (연결하지 않아도 됨)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "event_id")
+    private Event event;
 
     @Column(name = "content", nullable = false, length = 255)
     private String content;
@@ -44,19 +49,47 @@ public class Todo extends BaseTimeEntity {
     private boolean isCompleted;
 
     @Builder
-    public Todo(User user, String content, Boolean isCompleted) {
+    public Todo(User user, Event event, String content, Boolean isCompleted) {
+        validateContent(content);
+
         this.user = user;
+        this.event = event;
         this.content = content;
         this.isCompleted = isCompleted != null && isCompleted;
     }
 
+    // Todo 내용 수정 (null이면 기존 내용 유지)
     public void updateContent(String content) {
         if (content != null) {
+            validateContent(content);
             this.content = content;
         }
     }
 
+    // Todo 완료 상태 변경
     public void updateCompletion(boolean isCompleted) {
         this.isCompleted = isCompleted;
+    }
+
+    // Todo와 Event 연결 또는 연결 해제
+    public void updateEvent(Event event) {
+        this.event = event;
+    }
+
+    // 내용이 비어 있거나 255자를 초과하면 오류 발생
+    private static void validateContent(String content) {
+        if (content == null || content.isBlank()) {
+            throw new BusinessException(
+                    ErrorCode.VALIDATION_ERROR,
+                    "투두 내용은 비어 있을 수 없습니다."
+            );
+        }
+
+        if (content.length() > 255) {
+            throw new BusinessException(
+                    ErrorCode.VALIDATION_ERROR,
+                    "투두 내용은 255자 이하이어야 합니다."
+            );
+        }
     }
 }
