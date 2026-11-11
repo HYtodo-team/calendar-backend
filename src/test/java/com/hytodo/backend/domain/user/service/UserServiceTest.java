@@ -1,5 +1,6 @@
 package com.hytodo.backend.domain.user.service;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 import com.hytodo.backend.domain.user.dto.UserResponse;
@@ -41,6 +42,8 @@ class UserServiceTest {
                 .nickname("tester")
                 .build();
         ReflectionTestUtils.setField(user, "id", 1L);
+        LocalDateTime createdAt = LocalDateTime.of(2026, 1, 1, 0, 0);
+        ReflectionTestUtils.setField(user, "createdAt", createdAt);
 
         given(userRepository.findById(1L)).willReturn(Optional.of(user));
 
@@ -49,7 +52,7 @@ class UserServiceTest {
         assertThat(response.id()).isEqualTo(1L);
         assertThat(response.email()).isEqualTo("user@example.com");
         assertThat(response.nickname()).isEqualTo("tester");
-        assertThat(response.createdAt()).isEqualTo(user.getCreatedAt());
+        assertThat(response.createdAt()).isEqualTo(createdAt);
     }
 
     @Test

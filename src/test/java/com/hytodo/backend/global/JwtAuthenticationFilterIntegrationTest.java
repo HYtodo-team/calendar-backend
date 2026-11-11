@@ -66,6 +66,7 @@ class JwtAuthenticationFilterIntegrationTest {
     @Test
     @DisplayName("형식이 잘못된 토큰으로 보호된 API를 호출하면 401을 반환한다")
     void protectedApi_withMalformedToken_returns401() throws Exception {
+        assertThat(callWithToken(null)).isEqualTo(401);
         assertThat(callWithToken("not-a-valid-jwt")).isEqualTo(401);
     }
 
