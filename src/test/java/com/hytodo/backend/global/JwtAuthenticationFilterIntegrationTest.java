@@ -61,6 +61,7 @@ class JwtAuthenticationFilterIntegrationTest {
     @DisplayName("토큰 없이 보호된 API를 호출하면 401을 반환한다")
     void protectedApi_withoutToken_returns401() throws Exception {
         assertThat(callWithToken(null)).isEqualTo(401);
+        assertThat(callWithToken(null, "/api/v1/dashboard/summary")).isEqualTo(401);
     }
 
     @Test

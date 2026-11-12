@@ -1,3 +1,4 @@
+
 package com.hytodo.backend.domain.event.repository;
 
 import java.time.LocalDate;
@@ -32,4 +33,35 @@ public interface EventRepository extends JpaRepository<Event, Long> {
 
     // BE-06: 로그인한 사용자 소유의 Event만 조회
     Optional<Event> findByIdAndUserId(Long id, Long userId);
+
+    // BE-11: 오늘 날짜와 겹치는 일정 개수 조회
+    @Query("""
+            SELECT COUNT(e)
+            FROM Event e
+            WHERE e.user.id = :userId
+              AND e.startDate <= :today
+              AND e.endDate >= :today
+            """)
+    long countOverlappingEventsOnDate(
+            @Param("userId") Long userId,
+            @Param("today") LocalDate today
+    );
+
+    // BE-11: 오늘 이후 5일 이내 종료되는 기간 일정 조회
+    @Query("""
+            SELECT e
+            FROM Event e
+            WHERE e.user.id = :userId
+              AND e.startDate < e.endDate
+              AND e.endDate >= :today
+              AND e.endDate <= :limitDate
+            ORDER BY e.endDate ASC,
+                     e.createdAt ASC,
+                     e.id ASC
+            """)
+    List<Event> findUpcomingPeriodEvents(
+            @Param("userId") Long userId,
+            @Param("today") LocalDate today,
+            @Param("limitDate") LocalDate limitDate
+    );
 }
