@@ -62,6 +62,7 @@ class JwtAuthenticationFilterIntegrationTest {
     void protectedApi_withoutToken_returns401() throws Exception {
         assertThat(callWithToken(null)).isEqualTo(401);
         assertThat(callWithToken(null, "/api/v1/users/me")).isEqualTo(401);
+        assertThat(callWithToken(null, "/api/v1/dashboard/summary")).isEqualTo(401);
     }
 
     @Test
