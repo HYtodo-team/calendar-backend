@@ -53,7 +53,7 @@ public interface EventRepository extends JpaRepository<Event, Long> {
             FROM Event e
             WHERE e.user.id = :userId
               AND e.startDate < e.endDate
-              AND e.endDate > :today
+              AND e.endDate >= :today
               AND e.endDate <= :limitDate
             ORDER BY e.endDate ASC,
                      e.createdAt ASC,

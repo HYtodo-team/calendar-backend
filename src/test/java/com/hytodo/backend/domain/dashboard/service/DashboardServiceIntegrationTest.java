@@ -1,4 +1,3 @@
-
 package com.hytodo.backend.domain.dashboard.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -255,6 +254,7 @@ class DashboardServiceIntegrationTest {
         assertThat(response.upcomingEvents())
                 .extracting(EventSummaryResponse::title)
                 .containsExactly(
+                        "오늘 종료",
                         "내일 종료",
                         "5일 후 종료"
                 );
