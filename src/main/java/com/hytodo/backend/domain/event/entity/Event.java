@@ -75,17 +75,8 @@ public class Event extends BaseTimeEntity {
             String memo,
             boolean isImportant
     ) {
-        if (title == null || title.isBlank()) {
-            throw new IllegalArgumentException("title must not be blank");
-        }
-
-        if (startDate == null || endDate == null) {
-            throw new IllegalArgumentException("startDate and endDate are required");
-        }
-
-        if (startDate.isAfter(endDate)) {
-            throw new IllegalArgumentException("startDate must not be after endDate");
-        }
+        validateTitle(title);
+        validateSchedule(startDate, endDate, isAllDay, startTime, endTime);
 
         this.user = user;
         this.title = title;
@@ -97,5 +88,72 @@ public class Event extends BaseTimeEntity {
         this.location = location;
         this.memo = memo;
         this.isImportant = isImportant;
+    }
+
+    public void changeTitle(String title) {
+        validateTitle(title);
+        this.title = title;
+    }
+
+    /**
+     * 날짜·시간·종일 여부를 함께 바꿉니다. 이 값들은 서로 의존하기 때문에
+     * Service에서 정규화(기간 일정은 종일·시간 NULL)까지 끝낸 최종값을 받습니다.
+     */
+    public void changeSchedule(
+            LocalDate startDate,
+            LocalDate endDate,
+            boolean isAllDay,
+            LocalTime startTime,
+            LocalTime endTime
+    ) {
+        validateSchedule(startDate, endDate, isAllDay, startTime, endTime);
+        this.startDate = startDate;
+        this.endDate = endDate;
+        this.isAllDay = isAllDay;
+        this.startTime = startTime;
+        this.endTime = endTime;
+    }
+
+    public void changeLocation(String location) {
+        this.location = location;
+    }
+
+    public void changeMemo(String memo) {
+        this.memo = memo;
+    }
+
+    public void changeImportant(boolean isImportant) {
+        this.isImportant = isImportant;
+    }
+
+    private static void validateTitle(String title) {
+        if (title == null || title.isBlank()) {
+            throw new IllegalArgumentException("title must not be blank");
+        }
+    }
+
+    private static void validateSchedule(
+            LocalDate startDate,
+            LocalDate endDate,
+            boolean isAllDay,
+            LocalTime startTime,
+            LocalTime endTime
+    ) {
+        if (startDate == null || endDate == null) {
+            throw new IllegalArgumentException("startDate and endDate are required");
+        }
+
+        if (startDate.isAfter(endDate)) {
+            throw new IllegalArgumentException("startDate must not be after endDate");
+        }
+
+        if (!isAllDay) {
+            if (startTime == null || endTime == null) {
+                throw new IllegalArgumentException("startTime and endTime are required when not all day");
+            }
+            if (!startTime.isBefore(endTime)) {
+                throw new IllegalArgumentException("startTime must be before endTime");
+            }
+        }
     }
 }
