@@ -57,8 +57,8 @@ public class EventService {
                 request.startDate(),
                 request.endDate(),
                 Boolean.TRUE.equals(request.isAllDay()),
-                request.startTime(),
-                request.endTime()
+                truncateToSeconds(request.startTime()),
+                truncateToSeconds(request.endTime())
         );
 
         Event event = Event.builder()
@@ -125,8 +125,8 @@ public class EventService {
         LocalDate startDate = request.startDate() != null ? request.startDate() : event.getStartDate();
         LocalDate endDate = request.endDate() != null ? request.endDate() : event.getEndDate();
         boolean isAllDayRequested = request.isAllDay() != null ? request.isAllDay() : event.isAllDay();
-        LocalTime startTime = request.startTime() != null ? request.startTime() : event.getStartTime();
-        LocalTime endTime = request.endTime() != null ? request.endTime() : event.getEndTime();
+        LocalTime startTime = request.startTime() != null ? truncateToSeconds(request.startTime()) : event.getStartTime();
+        LocalTime endTime = request.endTime() != null ? truncateToSeconds(request.endTime()) : event.getEndTime();
 
         ResolvedSchedule schedule = resolveSchedule(startDate, endDate, isAllDayRequested, startTime, endTime);
         event.changeSchedule(startDate, endDate, schedule.isAllDay(), schedule.startTime(), schedule.endTime());
@@ -180,6 +180,10 @@ public class EventService {
 
     private static String emptyToNull(String value) {
         return value.isEmpty() ? null : value;
+    }
+
+    private static LocalTime truncateToSeconds(LocalTime time) {
+        return time == null ? null : time.truncatedTo(ChronoUnit.SECONDS);
     }
 
     private void validateDateRange(LocalDate from, LocalDate to) {

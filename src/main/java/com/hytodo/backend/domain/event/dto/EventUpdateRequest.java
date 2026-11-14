@@ -29,6 +29,7 @@ public record EventUpdateRequest(
         @Size(max = 255, message = "장소는 255자 이하여야 합니다.")
         String location,
 
+        @Size(max = 10000, message = "메모는 10000자 이하여야 합니다.")
         String memo,
 
         Boolean isImportant
