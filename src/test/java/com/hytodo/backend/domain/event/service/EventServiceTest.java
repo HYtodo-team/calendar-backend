@@ -250,6 +250,39 @@ class EventServiceTest {
     }
 
     @Test
+    @DisplayName("PATCH에 endDate만 보내면 startDate는 기존 값을 유지한 채 기간 일정으로 전환된다")
+    void updateEvent_onlyEndDateProvided_keepsExistingStartDate() {
+        Long userId = 1L;
+        Long eventId = 100L;
+        LocalDate day = LocalDate.of(2026, 9, 7);
+
+        Event existing = Event.builder()
+                .user(userOf(userId))
+                .title("팀 회의")
+                .startDate(day)
+                .endDate(day)
+                .startTime(LocalTime.of(14, 0))
+                .endTime(LocalTime.of(15, 0))
+                .isAllDay(false)
+                .isImportant(false)
+                .build();
+
+        given(eventRepository.findByIdAndUserId(eventId, userId)).willReturn(Optional.of(existing));
+        given(eventRepository.saveAndFlush(any(Event.class))).willAnswer(invocation -> invocation.getArgument(0));
+
+        EventUpdateRequest request = new EventUpdateRequest(
+                null, null, day.plusDays(3), null, null, null, null, null, null);
+
+        EventDetailResponse response = eventService.updateEvent(userId, eventId, request);
+
+        assertThat(response.startDate()).isEqualTo(day);
+        assertThat(response.endDate()).isEqualTo(day.plusDays(3));
+        assertThat(response.isAllDay()).isTrue();
+        assertThat(response.startTime()).isNull();
+        assertThat(response.endTime()).isNull();
+    }
+
+    @Test
     @DisplayName("종일 일정에 isAllDay 없이 시간만 보내면 무시되고 종일 상태가 유지된다")
     void updateEvent_timeOnlyOnAllDayEvent_timeIsIgnored() {
         Long userId = 1L;
