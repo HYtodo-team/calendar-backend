@@ -56,7 +56,7 @@ public class Event extends BaseTimeEntity {
     @Column(name = "location", length = 255)
     private String location;
 
-    @Column(name = "memo")
+    @Column(name = "memo", columnDefinition = "TEXT")
     private String memo;
 
     @Column(name = "is_important", nullable = false)

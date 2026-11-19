@@ -88,6 +88,26 @@ class EventServiceTest {
     }
 
     @Test
+    @DisplayName("종일 일정 생성 시 시간을 같이 보내도 무시되고 null로 저장된다")
+    void createEvent_allDayWithTimeProvided_timeIsIgnored() {
+        Long userId = 1L;
+        User user = userOf(userId);
+        LocalDate day = LocalDate.of(2026, 9, 7);
+
+        given(userRepository.findById(userId)).willReturn(Optional.of(user));
+        given(eventRepository.save(any(Event.class))).willAnswer(invocation -> invocation.getArgument(0));
+
+        EventCreateRequest request = new EventCreateRequest(
+                "팀 회의", day, day, true, LocalTime.of(14, 0), LocalTime.of(15, 0), "스터디룸", null, true);
+
+        EventDetailResponse response = eventService.createEvent(userId, request);
+
+        assertThat(response.isAllDay()).isTrue();
+        assertThat(response.startTime()).isNull();
+        assertThat(response.endTime()).isNull();
+    }
+
+    @Test
     @DisplayName("당일 시간 일정을 생성하면 입력한 시간 그대로 저장된다")
     void createEvent_timedSameDay_success() {
         Long userId = 1L;
@@ -227,6 +247,35 @@ class EventServiceTest {
         assertThat(response.startTime()).isNull();
         assertThat(response.endTime()).isNull();
         assertThat(response.endDate()).isEqualTo(day.plusDays(3));
+    }
+
+    @Test
+    @DisplayName("종일 일정에 isAllDay 없이 시간만 보내면 무시되고 종일 상태가 유지된다")
+    void updateEvent_timeOnlyOnAllDayEvent_timeIsIgnored() {
+        Long userId = 1L;
+        Long eventId = 100L;
+        LocalDate day = LocalDate.of(2026, 9, 7);
+
+        Event existing = Event.builder()
+                .user(userOf(userId))
+                .title("팀 회의")
+                .startDate(day)
+                .endDate(day)
+                .isAllDay(true)
+                .isImportant(false)
+                .build();
+
+        given(eventRepository.findByIdAndUserId(eventId, userId)).willReturn(Optional.of(existing));
+        given(eventRepository.saveAndFlush(any(Event.class))).willAnswer(invocation -> invocation.getArgument(0));
+
+        EventUpdateRequest request = new EventUpdateRequest(
+                null, null, null, null, LocalTime.of(14, 0), LocalTime.of(15, 0), null, null, null);
+
+        EventDetailResponse response = eventService.updateEvent(userId, eventId, request);
+
+        assertThat(response.isAllDay()).isTrue();
+        assertThat(response.startTime()).isNull();
+        assertThat(response.endTime()).isNull();
     }
 
     @Test
