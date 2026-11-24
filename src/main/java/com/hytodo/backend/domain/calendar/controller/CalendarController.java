@@ -1,8 +1,10 @@
+
 package com.hytodo.backend.domain.calendar.controller;
 
 import java.time.LocalDate;
 
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -11,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.hytodo.backend.domain.calendar.dto.CalendarDateResponse;
 import com.hytodo.backend.domain.calendar.service.CalendarQueryService;
+import com.hytodo.backend.global.response.ApiResponse;
 import com.hytodo.backend.global.security.CustomUserDetails;
 
 @RestController
@@ -23,15 +26,16 @@ public class CalendarController {
         this.calendarQueryService = calendarQueryService;
     }
 
+    // API-CAL-002: 선택 날짜 통합 조회
     @GetMapping("/dates/{date}")
-    public CalendarDateResponse getCalendarDate(
+    public ResponseEntity<ApiResponse<CalendarDateResponse>> getCalendarDate(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
     ) {
-        return calendarQueryService.getCalendarDate(
-                userDetails.getUserId(),
-                date
-        );
+        CalendarDateResponse response =
+                calendarQueryService.getCalendarDate(userDetails.getUserId(), date);
+
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 }
