@@ -2,6 +2,7 @@ package com.hytodo.backend.domain.dailynote.service;
 
 import java.time.LocalDate;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,9 +39,7 @@ public class DailyNoteService {
                 .orElse(null);
 
         if (existing != null) {
-            existing.changeContent(request.content());
-            dailyNoteRepository.flush();
-            return DailyNoteResponse.from(existing);
+            return updateContent(existing, request);
         }
 
         User user = userRepository.findById(userId)
@@ -52,8 +51,21 @@ public class DailyNoteService {
                 .content(request.content())
                 .build();
 
-        DailyNote saved = dailyNoteRepository.save(created);
-        return DailyNoteResponse.from(saved);
+        try {
+            DailyNote saved = dailyNoteRepository.saveAndFlush(created);
+            return DailyNoteResponse.from(saved);
+        } catch (DataIntegrityViolationException e) {
+            // 동시 요청이 먼저 생성한 메모가 있으면 재조회 후 수정으로 전환한다 (UNIQUE(user_id, note_date)).
+            DailyNote concurrentlyCreated = dailyNoteRepository.findByUserIdAndNoteDate(userId, date)
+                    .orElseThrow(() -> e);
+            return updateContent(concurrentlyCreated, request);
+        }
+    }
+
+    private DailyNoteResponse updateContent(DailyNote note, DailyNoteRequest request) {
+        note.changeContent(request.content());
+        dailyNoteRepository.flush();
+        return DailyNoteResponse.from(note);
     }
 
     // API-NOTE-003: 날짜 메모 삭제 (없어도 멱등하게 204)
