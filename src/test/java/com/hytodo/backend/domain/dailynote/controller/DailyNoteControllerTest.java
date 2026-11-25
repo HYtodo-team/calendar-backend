@@ -82,6 +82,7 @@ class DailyNoteControllerTest {
 
         mockMvc.perform(get("/api/v1/daily-notes/{date}", date))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.content").hasJsonPath())
                 .andExpect(jsonPath("$.data.content").doesNotExist());
     }
 
@@ -89,7 +90,11 @@ class DailyNoteControllerTest {
     void getNoteWithInvalidDateReturnsBadRequest() throws Exception {
         mockMvc.perform(get("/api/v1/daily-notes/{date}", "invalid-date"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.errorCode").value("VALIDATION_ERROR"));
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.errorCode").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.message").exists())
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.fieldErrors[0].field").value("date"));
     }
 
     @Test
@@ -126,7 +131,11 @@ class DailyNoteControllerTest {
                                 }
                                 """))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.errorCode").value("VALIDATION_ERROR"));
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.errorCode").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.message").exists())
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.fieldErrors[0].field").value("content"));
 
         then(dailyNoteService).should(Mockito.never())
                 .upsertNote(ArgumentMatchers.anyLong(), ArgumentMatchers.any(), ArgumentMatchers.any());

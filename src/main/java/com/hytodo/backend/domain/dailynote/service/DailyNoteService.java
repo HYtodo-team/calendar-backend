@@ -39,6 +39,7 @@ public class DailyNoteService {
 
         if (existing != null) {
             existing.changeContent(request.content());
+            dailyNoteRepository.flush();
             return DailyNoteResponse.from(existing);
         }
 

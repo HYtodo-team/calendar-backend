@@ -99,6 +99,7 @@ class DailyNoteServiceTest {
         assertThat(response.content()).isEqualTo("수정된 메모");
         Mockito.verify(dailyNoteRepository, Mockito.never()).save(any());
         Mockito.verify(userRepository, Mockito.never()).findById(any());
+        Mockito.verify(dailyNoteRepository).flush();
     }
 
     @Test
