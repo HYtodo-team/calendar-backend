@@ -2,16 +2,15 @@ package com.hytodo.backend.domain.dailynote.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.Optional;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-import org.springframework.dao.DataIntegrityViolationException;
 
 import com.hytodo.backend.domain.dailynote.dto.DailyNoteRequest;
 import com.hytodo.backend.domain.dailynote.dto.DailyNoteResponse;
@@ -67,95 +66,42 @@ class DailyNoteServiceTest {
     }
 
     @Test
-    @DisplayName("메모가 없는 날짜에 PUT하면 새로 생성한다")
-    void upsertNote_createsNewNote_whenNoneExists() {
+    @DisplayName("PUT하면 native upsert를 호출하고 그 결과를 재조회해 반환한다")
+    void upsertNote_delegatesToNativeUpsertAndReturnsSavedNote() {
         Long userId = 1L;
         LocalDate date = LocalDate.of(2026, 9, 7);
 
-        given(dailyNoteRepository.findByUserIdAndNoteDate(userId, date)).willReturn(Optional.empty());
-        given(userRepository.findById(userId)).willReturn(Optional.of(userOf(userId)));
-        given(dailyNoteRepository.saveAndFlush(any(DailyNote.class)))
-                .willAnswer(invocation -> invocation.getArgument(0));
+        DailyNote saved = DailyNote.builder()
+                .user(userOf(userId))
+                .noteDate(date)
+                .content("저장된 메모")
+                .build();
 
-        DailyNoteResponse response = dailyNoteService.upsertNote(userId, date, new DailyNoteRequest("새 메모"));
+        given(userRepository.existsById(userId)).willReturn(true);
+        given(dailyNoteRepository.findByUserIdAndNoteDate(userId, date)).willReturn(Optional.of(saved));
 
-        assertThat(response.content()).isEqualTo("새 메모");
+        DailyNoteResponse response = dailyNoteService.upsertNote(userId, date, new DailyNoteRequest("저장된 메모"));
+
+        assertThat(response.content()).isEqualTo("저장된 메모");
         assertThat(response.noteDate()).isEqualTo(date);
+        Mockito.verify(dailyNoteRepository).upsert(eq(userId), eq(date), eq("저장된 메모"));
     }
 
     @Test
-    @DisplayName("동시 요청으로 유니크 제약을 위반하면 재조회 후 기존 메모를 수정한다")
-    void upsertNote_concurrentCreate_fallsBackToUpdate() {
-        Long userId = 1L;
-        LocalDate date = LocalDate.of(2026, 9, 7);
-
-        DailyNote concurrentlyCreated = DailyNote.builder()
-                .user(userOf(userId))
-                .noteDate(date)
-                .content("동시 요청으로 먼저 생성된 메모")
-                .build();
-
-        given(dailyNoteRepository.findByUserIdAndNoteDate(userId, date))
-                .willReturn(Optional.empty())
-                .willReturn(Optional.of(concurrentlyCreated));
-        given(userRepository.findById(userId)).willReturn(Optional.of(userOf(userId)));
-        given(dailyNoteRepository.saveAndFlush(any(DailyNote.class)))
-                .willThrow(new DataIntegrityViolationException("unique constraint violated"));
-
-        DailyNoteResponse response =
-                dailyNoteService.upsertNote(userId, date, new DailyNoteRequest("내가 보낸 메모"));
-
-        assertThat(response.content()).isEqualTo("내가 보낸 메모");
-        Mockito.verify(dailyNoteRepository, Mockito.times(2)).findByUserIdAndNoteDate(userId, date);
-        Mockito.verify(dailyNoteRepository, Mockito.never()).save(any());
-    }
-
-    @Test
-    @DisplayName("메모가 있는 날짜에 PUT하면 기존 메모 내용을 수정하고 flush 이후의 updatedAt을 반환한다")
-    void upsertNote_updatesExistingNote_whenPresent() {
-        Long userId = 1L;
-        LocalDate date = LocalDate.of(2026, 9, 7);
-
-        DailyNote existing = DailyNote.builder()
-                .user(userOf(userId))
-                .noteDate(date)
-                .content("기존 메모")
-                .build();
-
-        LocalDateTime beforeFlush = LocalDateTime.of(2026, 9, 7, 10, 0);
-        LocalDateTime afterFlush = LocalDateTime.of(2026, 9, 7, 10, 5);
-        org.springframework.test.util.ReflectionTestUtils.setField(existing, "updatedAt", beforeFlush);
-
-        given(dailyNoteRepository.findByUserIdAndNoteDate(userId, date)).willReturn(Optional.of(existing));
-        // flush 시점에 감사 리스너가 updatedAt을 갱신하는 것을 시뮬레이션한다.
-        Mockito.doAnswer(invocation -> {
-            org.springframework.test.util.ReflectionTestUtils.setField(existing, "updatedAt", afterFlush);
-            return null;
-        }).when(dailyNoteRepository).flush();
-
-        DailyNoteResponse response = dailyNoteService.upsertNote(userId, date, new DailyNoteRequest("수정된 메모"));
-
-        assertThat(response.content()).isEqualTo("수정된 메모");
-        assertThat(response.updatedAt()).isEqualTo(afterFlush);
-        Mockito.verify(dailyNoteRepository, Mockito.never()).save(any());
-        Mockito.verify(userRepository, Mockito.never()).findById(any());
-        Mockito.verify(dailyNoteRepository).flush();
-    }
-
-    @Test
-    @DisplayName("존재하지 않는 사용자로 메모를 생성하면 RESOURCE_NOT_FOUND(404)를 던진다")
+    @DisplayName("존재하지 않는 사용자로 메모를 생성하면 RESOURCE_NOT_FOUND(404)를 던지고 upsert를 호출하지 않는다")
     void upsertNote_userNotFound_throwsResourceNotFound() {
         Long userId = 1L;
         LocalDate date = LocalDate.of(2026, 9, 7);
 
-        given(dailyNoteRepository.findByUserIdAndNoteDate(userId, date)).willReturn(Optional.empty());
-        given(userRepository.findById(userId)).willReturn(Optional.empty());
+        given(userRepository.existsById(userId)).willReturn(false);
 
         org.assertj.core.api.Assertions.assertThatThrownBy(
                         () -> dailyNoteService.upsertNote(userId, date, new DailyNoteRequest("메모")))
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.RESOURCE_NOT_FOUND);
+
+        Mockito.verify(dailyNoteRepository, Mockito.never()).upsert(any(), any(), any());
     }
 
     @Test
