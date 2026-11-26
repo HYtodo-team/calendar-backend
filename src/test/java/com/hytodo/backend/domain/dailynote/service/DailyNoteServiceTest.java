@@ -84,7 +84,7 @@ class DailyNoteServiceTest {
 
         assertThat(response.content()).isEqualTo("저장된 메모");
         assertThat(response.noteDate()).isEqualTo(date);
-        Mockito.verify(dailyNoteRepository).upsert(eq(userId), eq(date), eq("저장된 메모"));
+        Mockito.verify(dailyNoteRepository).upsert(eq(userId), eq(date), eq("저장된 메모"), any());
     }
 
     @Test
@@ -101,7 +101,7 @@ class DailyNoteServiceTest {
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.RESOURCE_NOT_FOUND);
 
-        Mockito.verify(dailyNoteRepository, Mockito.never()).upsert(any(), any(), any());
+        Mockito.verify(dailyNoteRepository, Mockito.never()).upsert(any(), any(), any(), any());
     }
 
     @Test

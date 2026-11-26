@@ -11,6 +11,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+import com.hytodo.backend.global.exception.BusinessException;
+import com.hytodo.backend.global.exception.ErrorCode;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -117,6 +119,30 @@ class DailyNoteControllerTest {
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.content").value("저장된 메모"));
+    }
+
+    @Test
+    void putNoteWithNonexistentUserReturnsNotFound() throws Exception {
+        LocalDate date = LocalDate.of(2026, 9, 7);
+
+        given(dailyNoteService.upsertNote(
+                ArgumentMatchers.eq(USER_ID),
+                ArgumentMatchers.eq(date),
+                ArgumentMatchers.any()))
+                .willThrow(new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "사용자를 찾을 수 없습니다."));
+
+        mockMvc.perform(put("/api/v1/daily-notes/{date}", date)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                            {
+                              "content": "메모"
+                            }
+                            """))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.errorCode").value("RESOURCE_NOT_FOUND"))
+                .andExpect(jsonPath("$.message").exists())
+                .andExpect(jsonPath("$.timestamp").exists());
     }
 
     @Test

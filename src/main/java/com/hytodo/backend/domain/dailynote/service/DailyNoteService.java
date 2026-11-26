@@ -1,7 +1,10 @@
 package com.hytodo.backend.domain.dailynote.service;
 
+import java.time.Clock;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,15 +16,25 @@ import com.hytodo.backend.domain.user.repository.UserRepository;
 import com.hytodo.backend.global.exception.BusinessException;
 import com.hytodo.backend.global.exception.ErrorCode;
 
-import lombok.RequiredArgsConstructor;
-
 @Service
-@RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class DailyNoteService {
 
     private final DailyNoteRepository dailyNoteRepository;
     private final UserRepository userRepository;
+    private final Clock clock;
+
+    @Autowired
+    public DailyNoteService(DailyNoteRepository dailyNoteRepository, UserRepository userRepository) {
+        this(dailyNoteRepository, userRepository, Clock.systemDefaultZone());
+    }
+
+    // 테스트에서 고정 Clock을 전달할 수 있는 생성자
+    DailyNoteService(DailyNoteRepository dailyNoteRepository, UserRepository userRepository, Clock clock) {
+        this.dailyNoteRepository = dailyNoteRepository;
+        this.userRepository = userRepository;
+        this.clock = clock;
+    }
 
     // API-NOTE-001: 날짜 메모 조회 (없으면 content:null)
     public DailyNoteResponse getNote(Long userId, LocalDate date) {
@@ -41,7 +54,7 @@ public class DailyNoteService {
             throw new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "사용자를 찾을 수 없습니다.");
         }
 
-        dailyNoteRepository.upsert(userId, date, request.content());
+        dailyNoteRepository.upsert(userId, date, request.content(), LocalDateTime.now(clock));
 
         DailyNote saved = dailyNoteRepository.findByUserIdAndNoteDate(userId, date)
                 .orElseThrow(() -> new IllegalStateException("upsert 직후 메모를 찾을 수 없습니다."));
